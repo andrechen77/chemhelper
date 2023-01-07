@@ -87,7 +87,7 @@ mod tests {
 	#[test]
 	fn tokenizes_properly() {
 		let formula = "     H2 Bee10 xpNe zt10 0 (No p)2  ?  ";
-		let tokens_are = TokenIter::from_char_iter(formula.chars());
+		let mut tokens_are = TokenIter::from_char_iter(formula.chars());
 		let tokens_should_be = vec![
 			Symbol("H".to_string()),
 			Number(2),
@@ -107,10 +107,10 @@ mod tests {
 			Number(2),
 			Unknown("?".to_string()),
 		];
-		
-		let mut zipped = tokens_are.zip(tokens_should_be.iter());
-		while let Some((token_is, token_should_be)) = zipped.next() {
-			assert_eq!(token_is, *token_should_be);
+
+		for token in tokens_should_be {
+			assert_eq!(token, tokens_are.next().unwrap());
 		}
+		assert_eq!(tokens_are.next(), None);
 	}
 }
