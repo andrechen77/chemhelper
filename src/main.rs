@@ -1,4 +1,4 @@
 fn main() {
     println!("Hello, world!");
-    chemhelper::say_hi();
+    chemhelper::do_something();
 }
