@@ -1,6 +1,7 @@
+#[derive(Debug, PartialEq)]
 pub enum Token {
 	Unknown(String),
-	Symbol {symbol: String},
+	Symbol(String),
 	Number(i32),
 	LeftParen,
 	RightParen,
@@ -40,6 +41,38 @@ impl<'a> Iterator for TokenIter<'a> {
 	}
 }
 
+#[cfg(test)]
 mod tests {
 	use super::*;
+	use Token::*;
+
+	#[test]
+	fn tokenizes_properly() {
+		let formula = "     H2 Bee10 xpNe zt10 0 (No p)2  ?  ";
+		let tokens_are = TokenIter::from_char_iter(formula.chars());
+		let tokens_should_be = vec![
+			Symbol("H".to_string()),
+			Number(2),
+			Symbol("Bee".to_string()),
+			Number(10),
+			Unknown("x".to_string()),
+			Unknown("p".to_string()),
+			Symbol("Ne".to_string()),
+			Unknown("z".to_string()),
+			Unknown("t".to_string()),
+			Number(10),
+			Number(0),
+			LeftParen,
+			Symbol("No".to_string()),
+			Unknown("p".to_string()),
+			RightParen,
+			Number(2),
+			Unknown("?".to_string()),
+		];
+		
+		let mut zipped = tokens_are.zip(tokens_should_be.iter());
+		while let Some((token_is, token_should_be)) = zipped.next() {
+			assert_eq!(token_is, *token_should_be);
+		}
+	}
 }

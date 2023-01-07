@@ -1,4 +1,3 @@
-use chem_data::elements::*;
 use chem_data::parser::*;
 
 pub mod cmd_interface;

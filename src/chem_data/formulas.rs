@@ -1,5 +1,4 @@
 use super::elements::*;
-use super::parser::*;
 use std::collections::HashMap;
 
 pub struct MolecularFormula<'a> {
