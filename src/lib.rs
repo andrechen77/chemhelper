@@ -1,4 +1,4 @@
-use chem_data::PeriodicTable;
+use chem_data::elements::*;
 use std::fs;
 
 pub mod cmd_interface;
