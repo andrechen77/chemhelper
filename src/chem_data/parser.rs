@@ -27,13 +27,14 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 		let mut chars = self.chars.take()?;
 
 		// skip leading whitespace
+		// cannot use skip_while method because we can't change the type of iterator
 		while chars.next_if(|next_char| next_char.is_whitespace()).is_some() {}
 
 		// check the first character
 		let result = match chars.next()? {
 			'(' => Token::LeftParen,
 			')' => Token::RightParen,
-			initial if initial.is_alphabetic() => Token::Symbol(initial.to_string()),
+			initial if initial.is_ascii_uppercase() => Token::Symbol(format!("{}{}", initial, next_lowercase(&mut chars))),
 			other => Token::Unknown(other.to_string()),
 		};
 
@@ -43,6 +44,15 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 		// return the result
 		Some(result)
 	}
+}
+
+fn next_lowercase(iter: &mut Peekable<impl Iterator<Item = char>>) -> String {
+	// cannot use scan method because we can't change the type of iterator
+	let mut result = String::new();
+	while let Some(next_char) = iter.next_if(|next_char| next_char.is_ascii_lowercase()) {
+		result.push(next_char);
+	}
+	result
 }
 
 #[cfg(test)]
