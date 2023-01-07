@@ -1,3 +1,5 @@
+use std::iter::Peekable;
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	Unknown(String),
@@ -7,37 +9,39 @@ pub enum Token {
 	RightParen,
 }
 
-pub struct TokenIter<'a> {
-	chars: Option<Box<dyn Iterator<Item = char> + 'a>>,
+pub struct TokenIter<I: Iterator<Item = char>> {
+	chars: Option<Peekable<I>>,
 }
 
-impl<'a> TokenIter<'a> {
-	pub fn from_char_iter<I>(chars: I) -> Self
-	where I: Iterator<Item = char> + 'a {
-		TokenIter {chars: Some(Box::new(chars))}
+impl<I: Iterator<Item = char>> TokenIter<I> {
+	pub fn from_char_iter(chars: I) -> Self {
+		TokenIter {chars: Some(chars.peekable())}
 	}
 }
 
-impl<'a> Iterator for TokenIter<'a> {
+impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 	type Item = Token;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		// filter out possibility of no char iterator
-		if let None = self.chars {
-			return None;
-		}
+		// take ownership of self.chars
+		let mut chars = self.chars.take()?;
 
-		// get the next non-whitespace character
-		let mut chars = self.chars
-			.take()
-			.expect("Possibility of None should've been filtered out above")
-			.skip_while(|next_char| next_char.is_whitespace());
-		let next_char = chars.next()?;
-		self.chars = Some(Box::new(chars));
+		// skip leading whitespace
+		while chars.next_if(|next_char| next_char.is_whitespace()).is_some() {}
 
-		let mut string = String::new();
-		string.push(next_char);
-		Some(Token::Unknown(string))
+		// check the first character
+		let result = match chars.next()? {
+			'(' => Token::LeftParen,
+			')' => Token::RightParen,
+			initial if initial.is_alphabetic() => Token::Symbol(initial.to_string()),
+			other => Token::Unknown(other.to_string()),
+		};
+
+		// restore ownership of self.chars
+		self.chars = Some(chars);
+
+		// return the result
+		Some(result)
 	}
 }
 
