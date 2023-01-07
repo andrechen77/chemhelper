@@ -51,7 +51,7 @@ impl fmt::Display for PeriodicTable {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub struct ElementInfo {
 	pub atomic_number: i32,
 	pub symbol: String,
@@ -64,6 +64,7 @@ impl fmt::Display for ElementInfo {
 	}
 }
 
+#[derive(Eq, Hash, PartialEq)]
 pub struct Element<'a> {
 	pub identity: &'a ElementInfo,
 }
@@ -73,3 +74,17 @@ impl fmt::Display for Element<'_> {
 		write!(f, "{}", self.identity.symbol)
 	}
 }
+
+pub struct MolecularFormula<'a> {
+	element_count: HashMap<Element<'a>, i32>,
+}
+
+impl MolecularFormula<'_> {
+	// TODO add new function
+
+	pub fn get_count(&self, element: &Element) {
+		self.element_count.get(element).unwrap_or(&0);
+	}
+}
+
+// TODO override traits to add and multiply molecular formulas
