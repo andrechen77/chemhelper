@@ -34,7 +34,18 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 		let result = match chars.next()? {
 			'(' => Token::LeftParen,
 			')' => Token::RightParen,
-			initial if initial.is_ascii_uppercase() => Token::Symbol(format!("{}{}", initial, next_lowercase(&mut chars))),
+			initial if initial.is_ascii_uppercase() =>
+				Token::Symbol(format!(
+					"{}{}",
+					initial,
+					next_chars_which(&mut chars, |c| c.is_ascii_lowercase())
+				)),
+			initial if initial.is_ascii_digit() =>
+				Token::Number(
+					format!("{}{}", initial, next_chars_which(&mut chars, |c| c.is_ascii_digit()))
+						.parse()
+						.expect("Should've only been given ascii digits so the parse should've passed")
+				),
 			other => Token::Unknown(other.to_string()),
 		};
 
@@ -46,10 +57,23 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 	}
 }
 
-fn next_lowercase(iter: &mut Peekable<impl Iterator<Item = char>>) -> String {
+/// given a peekable char iterator, returns the next immediate characters which
+/// satisfy the given predicate as a String
+/// 
+/// # Examples
+/// ```
+/// let sentence = "Hello there!".to_string();
+/// let first_word = next_chars_which(sentence.chars(), |c| c.is_alphabetic());
+/// assert_eq!(first_word, "Hello!");
+/// ```
+fn next_chars_which<P>(iter: &mut Peekable<impl Iterator<Item = char>>, mut predicate: P) -> String 
+where
+	P: FnMut(&char) -> bool
+{
 	// cannot use scan method because we can't change the type of iterator
+
 	let mut result = String::new();
-	while let Some(next_char) = iter.next_if(|next_char| next_char.is_ascii_lowercase()) {
+	while let Some(next_char) = iter.next_if(&mut predicate) {
 		result.push(next_char);
 	}
 	result
