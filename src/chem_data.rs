@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, collections::HashMap};
 
 #[derive(Debug)]
 pub struct PeriodicTable {
@@ -10,14 +10,20 @@ impl PeriodicTable {
 		PeriodicTable {
 			elements: string.lines().map(|line| {
 				let mut fields = line.split(' ');
+				let atomic_number = fields.next()
+					.expect("There should've been an atomic number as the first item of the line")
+					.parse()
+					.expect("Should've been able to parse the atomic number as an integer");
+				let symbol = fields.next()
+					.expect("There should've been an atomic as the third item of the line")
+					.to_string();
+				let name = fields.next()
+					.expect("There should've been an element name as the second item of the line")
+					.to_string();
 				ElementInfo {
-					atomic_number: fields.next()
-						.expect("There should've been an atomic number as the first item of the line")
-						.parse()
-						.expect("Should've been able to parse the atomic number as an integer"),
-					name: fields.next()
-						.expect("There should've been an element name as the second item of the line").to_string(),
-					symbol: fields.next().expect("There should've been an atomic as the third item of the line").to_string(),
+					atomic_number: atomic_number,
+					symbol: symbol,
+					name: name,
 				}
 			}).collect()
 		}
@@ -25,6 +31,14 @@ impl PeriodicTable {
 
 	pub fn add_element(&mut self, element: ElementInfo) {
 		self.elements.push(element);
+	}
+
+	pub fn get_element(&self, symbol: &str) -> Option<Element> {
+		Some(Element {identity: self.elements
+			.iter()
+			.filter(|e| e.symbol == symbol)
+			.next()?
+		})
 	}
 }
 
@@ -40,12 +54,22 @@ impl fmt::Display for PeriodicTable {
 #[derive(Debug)]
 pub struct ElementInfo {
 	pub atomic_number: i32,
-	pub name: String,
 	pub symbol: String,
+	pub name: String,
 }
 
 impl fmt::Display for ElementInfo {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "[{}\t{}\t| {}]", self.atomic_number, self.name, self.symbol)
+		write!(f, "[{} {} | {}]", self.atomic_number, self.symbol, self.name)
+	}
+}
+
+pub struct Element<'a> {
+	pub identity: &'a ElementInfo,
+}
+
+impl fmt::Display for Element<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", self.identity.symbol)
 	}
 }
