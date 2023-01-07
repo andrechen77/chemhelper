@@ -1,16 +1,21 @@
 use chem_data::elements::*;
-use std::fs;
+use chem_data::parser::*;
 
 pub mod cmd_interface;
 
 pub mod chem_data;
 
 pub fn do_something() {
-	let p_table_file_path = "ptable.txt";
-	let p_table = fs::read_to_string(p_table_file_path).expect("Should have been able to read the file.");
-	let p_table = PeriodicTable::from(p_table);
-	println!("Read the following from {p_table_file_path}:\n{}", p_table);
+	let input = read_from_file("input.txt");
+	let mut token_iter = TokenIter::from_char_iter(input.chars());
+	while let Some(next_token) = token_iter.next() {
+		println!("found: {}", match next_token {
+			Token::Unknown(string) => format!("unknown {}", string),
+			_ => format!("some other token"),
+		});
+	}
+}
 
-	let h = p_table.get_element("H").unwrap();
-	println!("Hydrogen is {}", h.identity);
+fn read_from_file(file_path: &str) -> String {
+	std::fs::read_to_string(file_path).expect("Should've been able to read the file")
 }

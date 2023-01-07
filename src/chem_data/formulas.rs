@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
 use super::elements::*;
+use super::parser::*;
+use std::collections::HashMap;
 
 pub struct MolecularFormula<'a> {
 	element_count: HashMap<Element<'a>, i32>,
