@@ -20,11 +20,7 @@ impl PeriodicTable {
 				let name = fields.next()
 					.expect("There should've been an element name as the second item of the line")
 					.to_string();
-				ElementInfo {
-					atomic_number: atomic_number,
-					symbol: symbol,
-					name: name,
-				}
+				ElementInfo {atomic_number, symbol, name}
 			}).collect()
 		}
 	}
@@ -36,8 +32,7 @@ impl PeriodicTable {
 	pub fn get_element(&self, symbol: &str) -> Option<Element> {
 		Some(Element {identity: self.elements
 			.iter()
-			.filter(|e| e.symbol == symbol)
-			.next()?
+			.find(|e| e.symbol == symbol)?
 		})
 	}
 }
@@ -45,7 +40,7 @@ impl PeriodicTable {
 impl fmt::Display for PeriodicTable {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for element in &self.elements {
-			write!(f, "{}\n", element)?;
+			writeln!(f, "{}", element)?;
 		}
 		Ok(())
 	}

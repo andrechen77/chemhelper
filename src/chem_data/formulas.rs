@@ -22,9 +22,7 @@ impl<'a> MolecularFormula<'a> {
 		let is_compatible = |expectation: &Expectation, token: &Token| -> bool {
 			match token {
 				Token::Symbol(symbol) => p_table.get_element(symbol).is_some(),
-				Token::Number(_) => {
-					if let SymbolOrSubscript = expectation { true } else { false }
-				},
+				Token::Number(_) =>	matches!(expectation, SymbolOrSubscript),
 				_ => false,
 			}
 		};
@@ -33,7 +31,7 @@ impl<'a> MolecularFormula<'a> {
 
 		let mut expectation = Symbol;
 		let mut last_symbol: Option<Element> = None;
-		while let Some(token) = token_iter.next_if(|t| is_compatible(&expectation, &t)) {
+		while let Some(token) = token_iter.next_if(|t| is_compatible(&expectation, t)) {
 			match token {
 				Token::Symbol(symbol) => {
 					let element = p_table.get_element(&symbol)
@@ -68,7 +66,7 @@ impl<'a> MolecularFormula<'a> {
 // TODO override traits to add and multiply molecular formulas
 
 impl fmt::Display for MolecularFormula<'_> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		Ok(())
 	}
 }
