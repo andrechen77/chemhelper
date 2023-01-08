@@ -1,14 +1,34 @@
-use chem_data::parser::*;
+use crate::{
+	chem_data::{
+		elements::PeriodicTable, 
+		parser,
+		formulas::MolecularFormula,
+	}, cmd_interface::get_user_input
+};
+
 
 pub mod cmd_interface;
 
 pub mod chem_data;
 
 pub fn do_something() {
-	let input = read_from_file("input.txt");
-	let mut token_iter = TokenIter::from_char_iter(input.chars());
-	while let Some(next_token) = token_iter.next() {
-		println!("found: {:?}", next_token);
+	let p_table = PeriodicTable::from(read_from_file("ptable.txt"));
+
+	let mut user_input: String;
+	loop {
+		user_input = loop {
+			match get_user_input("Enter a formula") {
+				Ok(user_input) => break user_input,
+				Err(_) => continue,
+			};
+		};
+		println!("You entered: {}", user_input);
+		if user_input == "stop" {
+			break;
+		}
+		let mut token_iter = parser::TokenIter::from_char_iter(user_input.chars()).peekable();
+		let formula = MolecularFormula::from(&p_table, &mut token_iter);
+		println!("Formula parsed as: {:?}", formula);
 	}
 }
 

@@ -1,3 +1,10 @@
 1 H hydrogen
 2 He helium
 3 Li lithium
+4 Be beryllium
+5 B boron
+6 C carbon
+7 N nitrogen
+8 O oxygen
+9 F fluorine
+10 Ne neon

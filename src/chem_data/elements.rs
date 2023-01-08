@@ -64,7 +64,7 @@ impl fmt::Display for ElementInfo {
 	}
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
 pub struct Element<'a> {
 	pub identity: &'a ElementInfo,
 }
