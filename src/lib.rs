@@ -26,7 +26,7 @@ pub fn do_something() {
 			break;
 		}
 		let mut token_iter = parser::TokenIter::from_char_iter(user_input.chars()).peekable();
-		let formula = MolecularFormula::from(&p_table, &mut token_iter);
+		let formula = MolecularFormula::from_token_iter(&p_table, &mut token_iter);
 		println!("Formula parsed as: {}", formula);
 	}
 }

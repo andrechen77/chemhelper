@@ -9,7 +9,7 @@ use super::{
 };
 
 impl<'a> MolecularFormula<'a> {
-	pub fn from<I>(p_table: &'a PeriodicTable, token_iter: &mut Peekable<TokenIter<I>>) -> Self
+	pub fn from_token_iter<I>(p_table: &'a PeriodicTable, token_iter: &mut Peekable<TokenIter<I>>) -> Self
 	where
 		I: Iterator<Item = char>
 	{
@@ -35,12 +35,12 @@ impl<'a> MolecularFormula<'a> {
 				Token::Symbol(symbol) => {
 					let element = p_table.get_element(&symbol)
 						.expect("Shouldn't have tried to parse a symbol if it wasn't compatible");
-					result.set_element_count(element, 1);
+					result.set_subscr(element, 1);
 					last_symbol = Some(element);
 					expectation = SymbolOrSubscript;
 				},
 				Token::Number(number) => {
-					result.set_element_count(last_symbol.expect("Shouldn't have tried to parse a number before a symbol was encountered"), number);
+					result.set_subscr(last_symbol.expect("Shouldn't have tried to parse a number before a symbol was encountered"), number);
 					expectation = Symbol;
 				},
 				_ => panic!("Shouldn't have tried to process this token if it wasn't expected")
@@ -48,6 +48,11 @@ impl<'a> MolecularFormula<'a> {
 		}
 		
 		result
+	}
+
+	pub fn from_str(p_table: &'a PeriodicTable, formula: &str) -> Self {
+		let mut token_iter = TokenIter::from_char_iter(formula.chars()).peekable();
+		MolecularFormula::from_token_iter(p_table, &mut token_iter)
 	}
 }
 
@@ -60,12 +65,13 @@ impl<'a> Default for MolecularFormula<'a> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::chem_data::std_p_table::std_p_table;
 
 	#[test]
-	fn rejects_double_subscript() {
-		let p_table = PeriodicTable::from(std::fs::read_to_string("ptable.txt").unwrap());
-		let mut input = TokenIter::from_char_iter("H12 34".chars()).peekable();
-		let _formula = MolecularFormula::from(&p_table, &mut input);
+	fn token_iter_method_rejects_double_subscript() {
+		let formula = "H12 34";
+		let mut input = TokenIter::from_char_iter(formula.chars()).peekable();
+		let _formula = MolecularFormula::from_token_iter(std_p_table(), &mut input);
 		assert_eq!(*input.peek().unwrap(), Token::Number(34));
 	}
 }
