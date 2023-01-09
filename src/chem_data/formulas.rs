@@ -30,7 +30,15 @@ impl<'a> MolecularFormula<'a> {
 // TODO override traits to add and multiply molecular formulas
 
 impl fmt::Display for MolecularFormula<'_> {
-	fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for (element, subscript) in &self.element_count {
+			write!(
+				f,
+				"{}{}",
+				element.identity.symbol,
+				if *subscript == 1 {"".to_string()} else {subscript.to_string()}
+			)?;
+		}
 		Ok(())
 	}
 }
