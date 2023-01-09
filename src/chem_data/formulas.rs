@@ -3,7 +3,7 @@ use crate::chem_data::elements::Element;
 
 #[derive(Debug)]
 pub struct MolecularFormula<'a> {
-	element_count: Vec<(Element<'a>, i32)>,
+	element_count: Vec<(Element<'a>, u32)>,
 }
 
 impl<'a> MolecularFormula<'a> {
@@ -11,7 +11,12 @@ impl<'a> MolecularFormula<'a> {
 		MolecularFormula {element_count: Vec::new()}
 	}
 
-	pub fn set_element_count(&mut self, element: Element<'a>, new_subscript: i32) {
+	pub fn set_element_count(&mut self, element: Element<'a>, new_subscript: u32) {
+		if new_subscript == 0 {
+			self.element_count.retain(|(e, _)| *e != element);
+			return;
+		}
+
 		if let Some((_, subscript)) = self.element_count.iter_mut().find(|(e, _)| *e == element) {
 			*subscript = new_subscript;
 		} else {
@@ -19,7 +24,7 @@ impl<'a> MolecularFormula<'a> {
 		}
 	}
 
-	pub fn get_element_count(&self, element: Element<'a>) -> i32 {
+	pub fn get_element_count(&self, element: Element<'a>) -> u32 {
 		match self.element_count.iter().find(|(e, _)| *e == element) {
 			Some((_, count)) => *count,
 			None => 0,

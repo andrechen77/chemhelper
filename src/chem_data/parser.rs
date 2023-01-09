@@ -6,7 +6,7 @@ mod formulas;
 pub enum Token {
 	Unknown(String),
 	Symbol(String),
-	Number(i32),
+	Number(u32),
 	LeftParen,
 	RightParen,
 }
