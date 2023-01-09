@@ -3,7 +3,8 @@ use crate::{
 		elements::PeriodicTable, 
 		parser,
 		formulas::MolecularFormula,
-	}, cmd_interface::get_user_input
+	},
+	cmd_interface::get_user_input
 };
 
 

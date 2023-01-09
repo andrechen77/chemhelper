@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 
+mod formulas;
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
 	Unknown(String),
