@@ -1,16 +1,14 @@
 use crate::{
 	chem_data::{
-		elements::PeriodicTable, 
-		parser,
+		elements::PeriodicTable,
 		formulas::MolecularFormula,
 	},
 	cmd_interface::get_user_input
 };
 
-
 pub mod cmd_interface;
-
 pub mod chem_data;
+pub mod parser;
 
 pub fn do_something() {
 	let p_table = PeriodicTable::from(read_from_file("ptable.txt"));
