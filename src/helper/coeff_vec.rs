@@ -3,38 +3,38 @@ use std::ops::{Add, AddAssign, Mul, MulAssign};
 type Num = i32;
 
 /// A Vec that also has coefficients associated with its elements
-#[derive(Debug, PartialEq)]
-pub struct CoeffVec<T: Copy + PartialEq> {
+#[derive(Debug, PartialEq, Default)]
+pub struct CoeffVec<T: Clone + PartialEq> {
 	pairs: Vec<(T, Num)>,
 }
 
-impl<T: Copy + PartialEq> CoeffVec<T> {
+impl<T: Clone + PartialEq> CoeffVec<T> {
 	pub fn new() -> Self {
 		Self {pairs: Vec::new()}
 	}
 
-	pub fn set_coeff(&mut self, element: T, new_coeff: Num) {
+	pub fn set_coeff(&mut self, element: &T, new_coeff: Num) {
 		if new_coeff == 0 {
-			self.pairs.retain(|(e, _)| *e != element);
+			self.pairs.retain(|(e, _)| e != element);
 			return;
 		}
 
-		if let Some((_, coeff)) = self.pairs.iter_mut().find(|(e, _)| *e == element) {
+		if let Some((_, coeff)) = self.pairs.iter_mut().find(|(e, _)| e == element) {
 			*coeff = new_coeff;
 		} else {
-			self.pairs.push((element, new_coeff));
+			self.pairs.push((element.clone(), new_coeff));
 		}
 	}
 
-	pub fn get_coeff(&self, element: T) -> Num {
-		match self.pairs.iter().find(|(e, _)| *e == element) {
+	pub fn get_coeff(&self, element: &T) -> Num {
+		match self.pairs.iter().find(|(e, _)| e == element) {
 			Some((_, count)) => *count,
 			None => 0,
 		}
 	}
 }
 
-impl<T: Copy + PartialEq> IntoIterator for CoeffVec<T> {
+impl<T: Clone + PartialEq> IntoIterator for CoeffVec<T> {
 	type Item = (T, Num);
 	type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -43,7 +43,7 @@ impl<T: Copy + PartialEq> IntoIterator for CoeffVec<T> {
 	}
 }
 
-impl<'a, T: Copy + PartialEq> IntoIterator for &'a mut CoeffVec<T> {
+impl<'a, T: Clone + PartialEq> IntoIterator for &'a mut CoeffVec<T> {
 	type Item = &'a mut (T, Num);
 	type IntoIter = std::slice::IterMut<'a, (T, Num)>;
 
@@ -52,7 +52,7 @@ impl<'a, T: Copy + PartialEq> IntoIterator for &'a mut CoeffVec<T> {
 	}
 }
 
-impl<'a, T: Copy + PartialEq> IntoIterator for &'a CoeffVec<T> {
+impl<'a, T: Clone + PartialEq> IntoIterator for &'a CoeffVec<T> {
 	type Item = &'a (T, Num);
 	type IntoIter = std::slice::Iter<'a, (T, Num)>;
 
@@ -61,18 +61,18 @@ impl<'a, T: Copy + PartialEq> IntoIterator for &'a CoeffVec<T> {
 	}
 }
 
-impl<T: Copy + PartialEq> AddAssign for CoeffVec<T> {
+impl<T: Clone + PartialEq> AddAssign for CoeffVec<T> {
 	fn add_assign(&mut self, rhs: Self) {
 		for (element, coeff) in rhs.pairs {
 			self.set_coeff(
-				element,
-				self.get_coeff(element) + coeff
+				&element,
+				self.get_coeff(&element) + coeff
 			);
 		}
 	}
 }
 
-impl<T: Copy + PartialEq> Add for CoeffVec<T> {
+impl<T: Clone + PartialEq> Add for CoeffVec<T> {
 	type Output = Self;
 
 	fn add(mut self, rhs: Self) -> Self::Output {
@@ -81,7 +81,7 @@ impl<T: Copy + PartialEq> Add for CoeffVec<T> {
 	}
 }
 
-impl<T: Copy + PartialEq> MulAssign<Num> for CoeffVec<T> {
+impl<T: Clone + PartialEq> MulAssign<Num> for CoeffVec<T> {
 	fn mul_assign(&mut self, rhs: Num) {
 		if rhs == 0 {
 			self.pairs.clear();
@@ -94,7 +94,7 @@ impl<T: Copy + PartialEq> MulAssign<Num> for CoeffVec<T> {
 	}
 }
 
-impl<T: Copy + PartialEq> Mul<Num> for CoeffVec<T> {
+impl<T: Clone + PartialEq> Mul<Num> for CoeffVec<T> {
 	type Output = Self;
 
 	fn mul(mut self, rhs: Num) -> Self::Output {

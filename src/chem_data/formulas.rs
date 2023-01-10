@@ -17,13 +17,13 @@ impl<'a> MolecularFormula<'a> {
 		MolecularFormula {element_count: CoeffVec::new()}
 	}
 
-	pub fn set_subscr(&mut self, element: Element<'a>, new_subscript: u32) {
+	pub fn set_subscr(&mut self, element: &Element<'a>, new_subscript: u32) {
 		let new_subscript = i32::try_from(new_subscript).unwrap();
-		self.element_count.set_coeff(element, new_subscript);
+		self.element_count.set_coeff(&element, new_subscript);
 	}
 
-	pub fn get_subscr(&self, element: Element<'a>) -> u32 {
-		self.element_count.get_coeff(element).unsigned_abs()
+	pub fn get_subscr(&self, element: &Element<'a>) -> u32 {
+		self.element_count.get_coeff(&element).unsigned_abs()
 	}
 }
 

@@ -35,12 +35,12 @@ impl<'a> MolecularFormula<'a> {
 				Token::Symbol(symbol) => {
 					let element = p_table.get_element(&symbol)
 						.expect("Shouldn't have tried to parse a symbol if it wasn't compatible");
-					result.set_subscr(element, 1);
+					result.set_subscr(&element, 1);
 					last_symbol = Some(element);
 					expectation = SymbolOrSubscript;
 				},
 				Token::Number(number) => {
-					result.set_subscr(last_symbol.expect("Shouldn't have tried to parse a number before a symbol was encountered"), number);
+					result.set_subscr(&last_symbol.expect("Shouldn't have tried to parse a number before a symbol was encountered"), number);
 					expectation = Symbol;
 				},
 				_ => panic!("Shouldn't have tried to process this token if it wasn't expected")
