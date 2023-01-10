@@ -1,9 +1,9 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-type Num = i32;
+pub type Num = i32;
 
 /// A Vec that also has coefficients associated with its elements
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct CoeffVec<T: Clone + PartialEq> {
 	pairs: Vec<(T, Num)>,
 }

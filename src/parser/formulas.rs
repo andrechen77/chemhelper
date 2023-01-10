@@ -3,16 +3,10 @@ use crate::chem_data::{
 	formulas::MolecularFormula,
 	elements::*,
 };
-use super::{
-	Token,
-	TokenIter,
-};
+use super::*;
 
-impl<'a> MolecularFormula<'a> {
-	pub fn from_token_iter<I>(p_table: &'a PeriodicTable, token_iter: &mut Peekable<TokenIter<I>>) -> Self
-	where
-		I: Iterator<Item = char>
-	{
+impl<'a, I: Iterator<Item = char>> FromTokenIter<'a, I> for MolecularFormula<'a> {
+	fn from_token_iter(p_table: &'a PeriodicTable, token_iter: &mut Peekable<TokenIter<I>>) -> Self {
 		enum Expectation {
 			SymbolOrSubscript,
 			Symbol,
@@ -49,7 +43,9 @@ impl<'a> MolecularFormula<'a> {
 		
 		result
 	}
+}
 
+impl<'a> MolecularFormula<'a> {
 	pub fn from_str(p_table: &'a PeriodicTable, formula: &str) -> Self {
 		let mut token_iter = TokenIter::from_char_iter(formula.chars()).peekable();
 		MolecularFormula::from_token_iter(p_table, &mut token_iter)

@@ -1,6 +1,12 @@
 use std::iter::Peekable;
+use crate::chem_data::elements::PeriodicTable;
 
 mod formulas;
+// mod equations;
+
+pub trait FromTokenIter<'a, I: Iterator<Item = char>> {
+	fn from_token_iter(p_table: &'a PeriodicTable, token_iter: &mut Peekable<TokenIter<I>>) -> Self;
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -9,6 +15,8 @@ pub enum Token {
 	Number(u32),
 	LeftParen,
 	RightParen,
+	PlusSign,
+	Arrow,
 }
 
 pub struct TokenIter<I: Iterator<Item = char>> {
@@ -36,6 +44,8 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 		let result = match chars.next()? {
 			'(' => Token::LeftParen,
 			')' => Token::RightParen,
+			'+' => Token::PlusSign,
+			'>' => Token::Arrow,
 			initial if initial.is_ascii_uppercase() =>
 				Token::Symbol(format!(
 					"{}{}",

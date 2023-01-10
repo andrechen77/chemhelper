@@ -7,7 +7,7 @@ use crate::chem_data::{
 };
 use crate::helper::coeff_vec::CoeffVec;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MolecularFormula<'a> {
 	element_count: CoeffVec<Element<'a>>,
 }
