@@ -61,13 +61,6 @@ impl<I: Iterator<Item = char>> Iterator for TokenIter<I> {
 
 /// given a peekable char iterator, returns the next immediate characters which
 /// satisfy the given predicate as a String
-/// 
-/// # Examples
-/// ```
-/// let sentence = "Hello there!".to_string();
-/// let first_word = next_chars_which(sentence.chars(), |c| c.is_alphabetic());
-/// assert_eq!(first_word, "Hello!");
-/// ```
 fn next_chars_which<P>(iter: &mut Peekable<impl Iterator<Item = char>>, mut predicate: P) -> String 
 where
 	P: FnMut(&char) -> bool
@@ -114,5 +107,12 @@ mod tests {
 			assert_eq!(token, tokens_are.next().unwrap());
 		}
 		assert_eq!(tokens_are.next(), None);
+	}
+
+	#[test]
+	fn can_find_next_chars_which() {
+		let sentence = "Hello there!".to_string();
+		let first_word = next_chars_which(&mut sentence.chars().peekable(), |c| c.is_alphabetic());
+		assert_eq!(first_word, "Hello");
 	}
 }

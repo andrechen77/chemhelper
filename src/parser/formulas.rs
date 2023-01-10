@@ -65,13 +65,14 @@ impl<'a> Default for MolecularFormula<'a> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::chem_data::std_p_table::std_p_table;
 
 	#[test]
 	fn token_iter_method_rejects_double_subscript() {
-		let formula = "H12 34";
+		let p_table = PeriodicTable::new_alphabetic();
+
+		let formula = "A12 34";
 		let mut input = TokenIter::from_char_iter(formula.chars()).peekable();
-		let _formula = MolecularFormula::from_token_iter(std_p_table(), &mut input);
+		let _formula = MolecularFormula::from_token_iter(&p_table, &mut input);
 		assert_eq!(*input.peek().unwrap(), Token::Number(34));
 	}
 }
