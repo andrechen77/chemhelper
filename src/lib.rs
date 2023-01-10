@@ -9,6 +9,7 @@ use crate::{
 pub mod cmd_interface;
 pub mod chem_data;
 pub mod parser;
+pub mod helper;
 
 pub fn do_something() {
 	let p_table = PeriodicTable::from(read_from_file("ptable.txt"));

@@ -5,48 +5,31 @@ use std::{
 use crate::chem_data::{
 	elements::Element
 };
+use crate::helper::coeff_vec::CoeffVec;
 
 #[derive(Debug, PartialEq)]
 pub struct MolecularFormula<'a> {
-	element_count: Vec<(Element<'a>, u32)>,
+	element_count: CoeffVec<Element<'a>>,
 }
 
 impl<'a> MolecularFormula<'a> {
 	pub fn new() -> Self {
-		MolecularFormula {element_count: Vec::new()}
+		MolecularFormula {element_count: CoeffVec::new()}
 	}
 
 	pub fn set_subscr(&mut self, element: Element<'a>, new_subscript: u32) {
-		if new_subscript == 0 {
-			self.element_count.retain(|(e, _)| *e != element);
-			return;
-		}
-
-		if let Some((_, subscript)) = self.element_count.iter_mut().find(|(e, _)| *e == element) {
-			*subscript = new_subscript;
-		} else {
-			self.element_count.push((element, new_subscript));
-		}
+		let new_subscript = i32::try_from(new_subscript).unwrap();
+		self.element_count.set_coeff(element, new_subscript);
 	}
 
 	pub fn get_subscr(&self, element: Element<'a>) -> u32 {
-		match self.element_count.iter().find(|(e, _)| *e == element) {
-			Some((_, count)) => *count,
-			None => 0,
-		}
+		self.element_count.get_coeff(element).unsigned_abs()
 	}
 }
 
-// TODO override traits to add and multiply molecular formulas
-
 impl<'a> AddAssign for MolecularFormula<'a> {
 	fn add_assign(&mut self, rhs: Self) {
-		for (element, subscript) in rhs.element_count {
-			self.set_subscr(
-				element,
-				self.get_subscr(element) + subscript
-			);
-		}
+		self.element_count += rhs.element_count;
 	}
 }
 
@@ -61,13 +44,7 @@ impl<'a> Add for MolecularFormula<'a> {
 
 impl<'a> MulAssign<u32> for MolecularFormula<'a> {
 	fn mul_assign(&mut self, rhs: u32) {
-		if rhs == 0 {
-			self.element_count.clear();
-		}
-
-		for (_, subscript) in &mut self.element_count {
-			*subscript *= rhs;
-		}
+		self.element_count *= i32::try_from(rhs).unwrap();
 	}
 }
 
