@@ -1,15 +1,16 @@
-use super::tokens::{Token, Tokens};
-use crate::chem_data::dictionary::*;
+use super::tokens::{IntoTokenIter, Token, Tokens};
+use crate::chem_data::dictionary::{self, Dictionary};
 use crate::chem_data::elements::*;
 use crate::helper::peek_iter::PeekIter;
+use std::fmt::Display;
 
 /// An adapter on a Token iterator that parses the tokens into chem_data objects
-pub struct Parser<'a, I: Iterator<Item = char>> {
-	tokens: PeekIter<Tokens<'a, I>>,
+pub struct Parser<I: Iterator<Item = char>> {
+	tokens: PeekIter<Tokens<I>>,
 }
 
-impl<'a, I: Iterator<Item = char>> Parser<'a, I> {
-	pub fn new(tokens: Tokens<'a, I>) -> Self {
+impl<I: Iterator<Item = char>> Parser<I> {
+	pub fn new(tokens: Tokens<I>) -> Self {
 		Parser {
 			tokens: PeekIter::new(tokens),
 		}
@@ -19,18 +20,29 @@ impl<'a, I: Iterator<Item = char>> Parser<'a, I> {
 		self.tokens.next()
 	}
 
-	/// Takes an element from the given stream of tokens. An element can be represented as an
-	/// identifier mapping to Value::Element in the dictionary. Returns None and consumes no tokens
-	/// if no element was found.
-	pub fn expect_element<'b>(&mut self, dict: &'b Dictionary) -> Option<Element<'b>> {
-		let peek_token = self.tokens.peek(0)?;
-		if let Token::Identifier(name) = peek_token {
-			if let Value::Element(element) = dict.get_value(name)? {
-				self.tokens.next();
-				return Some(element.to_owned());
-			}
+	fn skip_leading_whitespace(&mut self) {
+		while self.tokens.peek(0) == Some(&Token::Whitespace) {
+			self.tokens.next();
 		}
-		None
+	}
+
+	/// Takes an element from the given stream of tokens. An element can be represented as an
+	/// identifier mapping to Value::Element in the dictionary. If an unexpected token was found,
+	/// consumes that token and reports it as an error.
+	pub fn expect_element<'b>(
+		&mut self,
+		dict: &'b Dictionary,
+	) -> Result<Element<'b>, ParseError<'b>> {
+		self.skip_leading_whitespace();
+		let next_token = self.tokens.next().ok_or(ParseError::EndOfStream)?;
+		match next_token {
+			Token::Identifier(name) => match dict.get_value(&name) {
+				Some(dictionary::Value::Element(element)) => Ok(element.to_owned()),
+				Some(value) => Err(ParseError::IdentifierBadType(name, value)),
+				None => Err(ParseError::EndOfStream),
+			},
+			token => Err(ParseError::UnexpectedSyntax(token)),
+		}
 	}
 
 	// pub fn get_molecular_formula<'b>(&mut self, dict: &Dictionary) -> Option<MolecularFormula<'b>> {
@@ -64,4 +76,60 @@ impl<'a, I: Iterator<Item = char>> Parser<'a, I> {
 
 	// 	// TODO add optional charges
 	// }
+}
+
+impl<'a> From<&'a str> for Parser<std::str::Chars<'a>> {
+	fn from(value: &'a str) -> Self {
+		Self::new(value.chars().into_token_iter())
+	}
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParseError<'a> {
+	IdentifierBadType(String, &'a dictionary::Value<'a>),
+	UndefinedIdentifier(String),
+	UnexpectedSyntax(Token),
+	EndOfStream,
+}
+
+impl Display for ParseError<'_> {
+	fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		todo!();
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn parses_elements_correctly() {
+		let p_table = PeriodicTable::new_alphabetic();
+		let mut dict = Dictionary::new();
+		dict.load_elements(&p_table);
+
+		let mut parser = Parser::from("AlBo Ch;Dv");
+		assert_eq!(
+			parser.expect_element(&dict),
+			Ok(p_table.get_element("Al").unwrap())
+		);
+		assert_eq!(
+			parser.expect_element(&dict),
+			Ok(p_table.get_element("Bo").unwrap())
+		);
+		assert_eq!(
+			parser.expect_element(&dict),
+			Ok(p_table.get_element("Ch").unwrap())
+		);
+		assert_eq!(
+			parser.expect_element(&dict),
+			Err(ParseError::UnexpectedSyntax(Token::Unknown(
+				";".to_string()
+			)))
+		);
+		assert_eq!(
+			parser.expect_element(&dict),
+			Ok(p_table.get_element("Dv").unwrap())
+		);
+	}
 }

@@ -28,7 +28,7 @@ pub enum Token {
 
 type StrTokPair = (&'static str, Token);
 
-pub static TOKEN_STRINGS: &[StrTokPair] = &[
+static TOKEN_STRINGS: &[StrTokPair] = &[
 	("(", Token::LParen),
 	(")", Token::RParen),
 	("[", Token::LBrack),
@@ -49,16 +49,16 @@ pub static TOKEN_STRINGS: &[StrTokPair] = &[
 ];
 
 /// An iterator adaptor on an Iterator<Item = char> that tokenizes the items
-pub struct Tokens<'a, I: Iterator<Item = char>> {
+pub struct Tokens<I: Iterator<Item = char>> {
 	source: PeekIter<I>,
-	token_strings: &'a [StrTokPair],
+	token_strings: &'static [StrTokPair],
 }
 
-impl<'a, I: Iterator<Item = char>> Tokens<'a, I> {
-	pub fn new(source: I, token_strings: &'a [StrTokPair]) -> Self {
+impl<I: Iterator<Item = char>> Tokens<I> {
+	pub fn new(source: I) -> Self {
 		Tokens {
 			source: PeekIter::new(source),
-			token_strings,
+			token_strings: &TOKEN_STRINGS,
 		}
 	}
 
@@ -112,7 +112,7 @@ impl<'a, I: Iterator<Item = char>> Tokens<'a, I> {
 	}
 }
 
-impl<I: Iterator<Item = char>> Iterator for Tokens<'_, I> {
+impl<I: Iterator<Item = char>> Iterator for Tokens<I> {
 	type Item = Token;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -170,14 +170,14 @@ impl<I: Iterator<Item = char>> Iterator for Tokens<'_, I> {
 pub trait IntoTokenIter {
 	type SourceIter: Iterator<Item = char>;
 
-	fn into_token_iter<'a>(self, token_strings: &'a [StrTokPair]) -> Tokens<'a, Self::SourceIter>;
+	fn into_token_iter(self) -> Tokens<Self::SourceIter>;
 }
 
 impl<I: Iterator<Item = char>> IntoTokenIter for I {
 	type SourceIter = I;
 
-	fn into_token_iter<'a>(self, token_strings: &'a [StrTokPair]) -> Tokens<'a, I> {
-		Tokens::new(self, token_strings)
+	fn into_token_iter(self) -> Tokens<I> {
+		Tokens::new(self)
 	}
 }
 
@@ -189,7 +189,7 @@ mod tests {
 	#[test]
 	fn tokenizes_properly() {
 		let input = "'regular_1dEnti-fier*=-->(< caLiFor_ni-aGurls1234 .5678.4#1.234a ? ";
-		let tokens_are: Vec<Token> = input.chars().into_token_iter(TOKEN_STRINGS).collect();
+		let tokens_are: Vec<Token> = input.chars().into_token_iter().collect();
 		let tokens_should_be = vec![
 			Identifier("regular_1dEnti-fier".to_string()),
 			MulSign,

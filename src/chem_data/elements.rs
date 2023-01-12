@@ -44,21 +44,21 @@ impl PeriodicTable {
 	pub fn new_alphabetic() -> Self {
 		PeriodicTable::from(
 			"\
-			1 A alicium
-			2 B bobbium
-			3 C charlium
-			4 D davidium
-			5 E erinium
-			6 F frankium
-			7 G gracium
-			8 H heidium
-			9 I ivanine
-			10 J joshine
-			11 K kevinium
-			12 L lilium
-			13 M mikine
-			14 N nancium
-			15 O oscarinium"
+			1 Al alicium
+			2 Bo bobbium
+			3 Ch charlium
+			4 Dv davidium
+			5 Er erinium
+			6 Fr frankium
+			7 Gr gracium
+			8 He heidium
+			9 Iv ivanine
+			10 Js joshine
+			11 Kv kevinium
+			12 Ll lilium
+			13 Mk mikine
+			14 Nc nancium
+			15 Os oscarinium"
 				.to_string(),
 		)
 	}

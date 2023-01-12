@@ -1,11 +1,13 @@
 use super::{elements::*, formulas::*};
 use std::collections::hash_map::HashMap;
 
+#[derive(Debug, PartialEq)]
 pub enum Value<'a> {
 	Element(Element<'a>),
 	MolecularFormula(MolecularFormula<'a>),
 }
 
+#[derive(Debug)]
 pub struct Dictionary<'a> {
 	values: HashMap<String, Value<'a>>,
 }

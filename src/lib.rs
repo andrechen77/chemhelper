@@ -6,7 +6,7 @@ use crate::{
 	},
 	cmd_interface::get_user_input,
 	parse::parser::Parser,
-	parse::tokens::{IntoTokenIter, TOKEN_STRINGS},
+	parse::tokens::IntoTokenIter,
 };
 
 pub mod chem_data;
@@ -31,9 +31,10 @@ pub fn do_something() {
 		if user_input == "stop" {
 			break;
 		}
-		let tokens = user_input.chars().into_token_iter(TOKEN_STRINGS);
+
+		let tokens = user_input.chars().into_token_iter();
 		let mut parser = Parser::new(tokens);
-		while let Some(element) = parser.expect_element(&dict) {
+		while let Ok(element) = parser.expect_element(&dict) {
 			println!("Found element: {}", element);
 		}
 		println!("Unparseable tokens:");
