@@ -1,3 +1,3 @@
-mod formulas;
+pub mod parser;
 // mod equations;
 pub mod tokens;

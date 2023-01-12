@@ -12,18 +12,21 @@ impl PeriodicTable {
                 .lines()
                 .map(|line| {
                     let mut fields = line.split_ascii_whitespace();
-                    let atomic_number = dbg!(fields.next())
+                    let atomic_number = fields
+                        .next()
                         .expect(
                             "There should've been an atomic number as the first item of the line",
                         )
                         .parse()
                         .expect("Should've been able to parse the atomic number as an integer");
-                    let symbol = dbg!(fields.next())
+                    let symbol = fields
+                        .next()
                         .expect(
                             "There should've been an atomic symbol as the second item of the line",
                         )
                         .to_string();
-                    let name = dbg!(fields.next())
+                    let name = fields
+                        .next()
                         .expect(
                             "There should've been an element name as the third item of the line",
                         )
@@ -65,9 +68,18 @@ impl PeriodicTable {
     }
 
     pub fn get_element(&self, symbol: &str) -> Option<Element> {
-        Some(Element {
-            identity: self.elements.iter().find(|e| e.symbol == symbol)?,
-        })
+        Some(Element::new(
+            self.elements.iter().find(|e| e.symbol == symbol)?,
+        ))
+    }
+}
+
+impl<'a> IntoIterator for &'a PeriodicTable {
+    type Item = &'a ElementInfo;
+    type IntoIter = std::slice::Iter<'a, ElementInfo>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.iter()
     }
 }
 
@@ -100,6 +112,12 @@ impl fmt::Display for ElementInfo {
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
 pub struct Element<'a> {
     pub identity: &'a ElementInfo,
+}
+
+impl<'a> Element<'a> {
+    pub fn new(identity: &'a ElementInfo) -> Self {
+        Element { identity }
+    }
 }
 
 impl fmt::Display for Element<'_> {

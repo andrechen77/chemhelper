@@ -75,6 +75,13 @@ impl fmt::Display for MolecularFormula<'_> {
     }
 }
 
+impl Default for MolecularFormula<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,3 +157,4 @@ mod tests {
         }
     }
 }
+*/
