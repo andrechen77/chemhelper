@@ -5,14 +5,14 @@ use crate::{
 		elements::PeriodicTable,
 	},
 	cmd_interface::get_user_input,
-	parser::parser::Parser,
-	parser::tokens::{IntoTokenIter, TOKEN_STRINGS},
+	parse::parser::Parser,
+	parse::tokens::{IntoTokenIter, TOKEN_STRINGS},
 };
 
 pub mod chem_data;
 pub mod cmd_interface;
 pub mod helper;
-pub mod parser;
+pub mod parse;
 
 pub fn do_something() {
 	let p_table = PeriodicTable::from(std::fs::read_to_string("ptable.txt").unwrap());
