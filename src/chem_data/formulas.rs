@@ -81,15 +81,17 @@ impl Default for MolecularFormula<'_> {
 	}
 }
 
-/*
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::chem_data::elements::PeriodicTable;
+	use crate::chem_data::{dictionary::Dictionary, elements::PeriodicTable};
+	use crate::parse::parse_with_dict::*;
 
 	#[test]
 	fn adds_correctly() {
 		let p_table = PeriodicTable::new_alphabetic();
+		let mut dict = Dictionary::new();
+		dict.load_elements(&p_table);
 
 		struct Case<'a> {
 			addend0: MolecularFormula<'a>,
@@ -99,15 +101,15 @@ mod tests {
 
 		let make_case = |addend0: &str, addend1: &str, sum: &str| -> Case {
 			Case {
-				addend0: MolecularFormula::from_str(&p_table, addend0),
-				addend1: MolecularFormula::from_str(&p_table, addend1),
-				sum: MolecularFormula::from_str(&p_table, sum),
+				addend0: parse_molecular_formula_with_dict(&dict, addend0).unwrap(),
+				addend1: parse_molecular_formula_with_dict(&dict, addend1).unwrap(),
+				sum: parse_molecular_formula_with_dict(&dict, sum).unwrap(),
 			}
 		};
 
 		let cases: Vec<Case> = vec![
-			make_case("A1B2", "A3C4", "A4B2C4"),
-			make_case("A0B1", "A2C3", "B1A2C3"),
+			make_case(".Al1Bo2", ".Al3Ch4", ".Al4Bo2Ch4"),
+			make_case(".Al0Bo1", ".Al2Ch3", ".Bo1Al2Ch3"),
 		];
 
 		for Case {
@@ -123,6 +125,8 @@ mod tests {
 	#[test]
 	fn multiplies_correctly() {
 		let p_table = PeriodicTable::new_alphabetic();
+		let mut dict = Dictionary::new();
+		dict.load_elements(&p_table);
 
 		struct Case<'a> {
 			factor0: MolecularFormula<'a>,
@@ -132,19 +136,19 @@ mod tests {
 
 		let make_case = |factor0: &str, factor1: u32, product: &str| -> Case {
 			Case {
-				factor0: MolecularFormula::from_str(&p_table, factor0),
+				factor0: parse_molecular_formula_with_dict(&dict, factor0).unwrap(),
 				factor1,
-				product: MolecularFormula::from_str(&p_table, product),
+				product: parse_molecular_formula_with_dict(&dict, product).unwrap(),
 			}
 		};
 
 		let cases: Vec<Case> = vec![
-			make_case("A1B2", 0, ""),
-			make_case("A1B2", 1, "A1B2"),
-			make_case("A1B2", 2, "A2B4"),
-			make_case("A0B2", 0, ""),
-			make_case("A0B2", 1, "B2"),
-			make_case("A0B2", 2, "B4"),
+			make_case(".Al1Bo2", 0, "."),
+			make_case(".Al1Bo2", 1, ".Al1Bo2"),
+			make_case(".Al1Bo2", 2, ".Al2Bo4"),
+			make_case(".Al0Bo2", 0, "."),
+			make_case(".Al0Bo2", 1, ".Bo2"),
+			make_case(".Al0Bo2", 2, ".Bo4"),
 		];
 
 		for Case {
@@ -157,4 +161,3 @@ mod tests {
 		}
 	}
 }
-*/
