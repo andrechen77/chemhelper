@@ -5,6 +5,7 @@ use std::collections::hash_map::HashMap;
 pub enum Value<'a> {
 	Element(Element<'a>),
 	MolecularFormula(MolecularFormula<'a>),
+	Integer(u32),
 }
 
 #[derive(Debug)]
