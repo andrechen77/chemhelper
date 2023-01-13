@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct PeriodicTable {
-	elements: Vec<ElementInfo>,
+	elements: Vec<Element>,
 }
 
 impl PeriodicTable {
@@ -31,7 +31,7 @@ impl PeriodicTable {
 							"There should've been an element name as the third item of the line",
 						)
 						.to_string();
-					ElementInfo {
+					Element {
 						atomic_number,
 						symbol,
 						name,
@@ -63,20 +63,18 @@ impl PeriodicTable {
 		)
 	}
 
-	pub fn add_element(&mut self, element: ElementInfo) {
+	pub fn add_element(&mut self, element: Element) {
 		self.elements.push(element);
 	}
 
-	pub fn get_element(&self, symbol: &str) -> Option<Element> {
-		Some(Element::new(
-			self.elements.iter().find(|e| e.symbol == symbol)?,
-		))
+	pub fn get_element(&self, symbol: &str) -> Option<&Element> {
+		self.elements.iter().find(|&e| e.symbol == symbol)
 	}
 }
 
 impl<'a> IntoIterator for &'a PeriodicTable {
-	type Item = &'a ElementInfo;
-	type IntoIter = std::slice::Iter<'a, ElementInfo>;
+	type Item = &'a Element;
+	type IntoIter = std::slice::Iter<'a, Element>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.elements.iter()
@@ -93,35 +91,18 @@ impl fmt::Display for PeriodicTable {
 }
 
 #[derive(Debug, Eq, Hash, PartialEq)]
-pub struct ElementInfo {
+pub struct Element {
 	pub atomic_number: i32,
 	pub symbol: String,
 	pub name: String,
 }
 
-impl fmt::Display for ElementInfo {
+impl fmt::Display for Element {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(
 			f,
 			"[{} {} | {}]",
 			self.atomic_number, self.symbol, self.name
 		)
-	}
-}
-
-#[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
-pub struct Element<'a> {
-	pub identity: &'a ElementInfo,
-}
-
-impl<'a> Element<'a> {
-	pub fn new(identity: &'a ElementInfo) -> Self {
-		Element { identity }
-	}
-}
-
-impl fmt::Display for Element<'_> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}", self.identity.symbol)
 	}
 }

@@ -1,7 +1,7 @@
 use crate::{
-	chem_data::{dictionary::Dictionary, elements::PeriodicTable, formulas::MolecularFormula},
+	chem_data::{dictionary::Dictionary, elements::PeriodicTable},
 	cmd_interface::UserInputIter,
-	parse::try_from_str_with_dict::FromStrWithDict,
+	parse::parse_with_dict::*,
 };
 
 pub mod chem_data;
@@ -23,7 +23,7 @@ pub fn do_something() {
 
 	for line in _user_lines {
 		println!("You entered {}", line);
-		match MolecularFormula::from_str_w_dict(&dict, &line) {
+		match parse_molecular_formula_with_dict(&dict, &line) {
 			Ok(formula) => {
 				println!("Parsed as {}", formula);
 			},

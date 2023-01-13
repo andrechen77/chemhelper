@@ -7,7 +7,7 @@ use std::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct MolecularFormula<'a> {
-	element_count: CoeffVec<Element<'a>>,
+	element_count: CoeffVec<&'a Element>,
 }
 
 impl<'a> MolecularFormula<'a> {
@@ -17,12 +17,12 @@ impl<'a> MolecularFormula<'a> {
 		}
 	}
 
-	pub fn set_subscr(&mut self, element: &Element<'a>, new_subscript: u32) {
+	pub fn set_subscr(&mut self, element: &'a Element, new_subscript: u32) {
 		let new_subscript = i32::try_from(new_subscript).unwrap();
 		self.element_count.set_coeff(&element, new_subscript);
 	}
 
-	pub fn get_subscr(&self, element: &Element<'a>) -> u32 {
+	pub fn get_subscr(&self, element: &'a Element) -> u32 {
 		self.element_count.get_coeff(&element).unsigned_abs()
 	}
 }
@@ -59,12 +59,12 @@ impl<'a> Mul<u32> for MolecularFormula<'a> {
 
 impl fmt::Display for MolecularFormula<'_> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		for (element, subscript) in &self.element_count {
+		for &(element, subscript) in &self.element_count {
 			write!(
 				f,
 				"{}{}",
-				element.identity.symbol,
-				if *subscript == 1 {
+				element.symbol,
+				if subscript == 1 {
 					"".to_string()
 				} else {
 					subscript.to_string()

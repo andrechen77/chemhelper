@@ -29,13 +29,13 @@ impl<I: Iterator<Item = char>> Parser<I> {
 	/// Takes an element from the given stream of tokens. An element can be represented as an
 	/// identifier mapping to Value::Element in the dictionary. If an unexpected token was found,
 	/// does not consume that token and reports an error.
-	pub fn parse_element<'a>(&mut self, dict: &'a Dictionary) -> Result<Element<'a>, ParseError> {
+	pub fn parse_element<'a>(&mut self, dict: &'a Dictionary) -> Result<&'a Element, ParseError> {
 		let next_token = self.tokens.peek(0).ok_or(ParseError::EndOfStream)?;
 		match next_token {
 			Token::Identifier(name) => match dict.get_value(name) {
 				Some(dictionary::Value::Element(element)) => {
 					self.tokens.next();
-					Ok(element.to_owned())
+					Ok(*element)
 				},
 				Some(_) | None => Err(ParseError::InvalidIdentifier(next_token.clone())),
 			},
@@ -96,7 +96,7 @@ impl<I: Iterator<Item = char>> Parser<I> {
 							} else {
 								1
 							};
-							result.set_subscr(&element, subscript);
+							result.set_subscr(element, subscript);
 						},
 					}
 				}

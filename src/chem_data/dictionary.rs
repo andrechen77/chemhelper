@@ -3,7 +3,7 @@ use std::collections::hash_map::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub enum Value<'a> {
-	Element(Element<'a>),
+	Element(&'a Element),
 	MolecularFormula(MolecularFormula<'a>),
 	Integer(u32),
 }
@@ -26,10 +26,8 @@ impl<'a> Dictionary<'a> {
 
 	pub fn load_elements(&mut self, p_table: &'a PeriodicTable) {
 		for element_info in p_table {
-			self.values.insert(
-				element_info.symbol.clone(),
-				Value::Element(Element::new(element_info)),
-			);
+			self.values
+				.insert(element_info.symbol.clone(), Value::Element(element_info));
 		}
 	}
 }

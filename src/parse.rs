@@ -1,4 +1,4 @@
 pub mod parser;
 // mod equations;
+pub mod parse_with_dict;
 pub mod tokens;
-pub mod try_from_str_with_dict;
