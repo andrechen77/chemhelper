@@ -194,6 +194,9 @@ mod tests {
 				"C".to_string()
 			)))
 		);
-		assert_eq!(parser.get_raw_token().unwrap(), Token::Identifier("C".to_string()));
+		assert_eq!(
+			parser.get_raw_token().unwrap(),
+			Token::Identifier("C".to_string())
+		);
 	}
 }
