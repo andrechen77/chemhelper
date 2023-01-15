@@ -6,7 +6,7 @@ pub enum Token {
 	Whitespace,
 	Identifier(String),
 	StringLiteral(String),
-	Integer(u32),
+	Integer(String),
 	Real(String),
 	LParen,
 	RParen,
@@ -17,6 +17,7 @@ pub enum Token {
 	Dot,
 	Bang,
 	Cash,
+	CashCash,
 	EqualSign,
 	PlusSign,
 	MinusSign,
@@ -41,6 +42,7 @@ static TOKEN_STRINGS: &[StrTokPair] = &[
 	(".", Token::Dot),
 	("!", Token::Bang),
 	("$", Token::Cash),
+	("$$", Token::CashCash),
 	("=", Token::EqualSign),
 	("+", Token::PlusSign),
 	("-", Token::MinusSign),
@@ -158,7 +160,7 @@ impl<I: Iterator<Item = char>> Iterator for Tokens<I> {
 			if seen_decimal {
 				Some(Token::Real(number_string))
 			} else {
-				Some(Token::Integer(number_string.parse().expect("Should've been a parseable digits-only String")))
+				Some(Token::Integer(number_string))
 			}
 		} else {
 			match self.get_longest_simple_token() {
@@ -195,13 +197,13 @@ mod tests {
 
 	#[test]
 	fn tokenizes_properly() {
-		let input = "'notregu1ar_idEnt1-fier*=-->(< ....caLiFor_ni-aGur!123 .56.4e2 1.234.a ? ";
+		let input = "'notregu1ar_idEnt1-fier*=-->(< ....caLiFor_ni-aGur!$$$123 .56.4e2 1.234.a ? ";
 		let tokens_are: Vec<Token> = input.chars().into_token_iter().collect();
 		let tokens_should_be = vec![
 			Identifier("notregu1ar".to_string()),
 			Identifier("id".to_string()),
 			Identifier("Ent".to_string()),
-			Integer(1),
+			Integer("1".to_string()),
 			MinusSign,
 			Identifier("fier".to_string()),
 			MulSign,
@@ -221,7 +223,9 @@ mod tests {
 			Identifier("a".to_string()),
 			Identifier("Gur".to_string()),
 			Bang,
-			Integer(123),
+			CashCash,
+			Cash,
+			Integer("123".to_string()),
 			Whitespace,
 			Dot,
 			Real("56.4e2".to_string()),
