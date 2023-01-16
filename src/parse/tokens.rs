@@ -5,7 +5,8 @@ pub enum Token {
 	Unknown(String),
 	Whitespace,
 	Identifier(String),
-	Integer(u32),
+	StringLiteral(String),
+	Integer(String),
 	Real(String),
 	LParen,
 	RParen,
@@ -13,15 +14,18 @@ pub enum Token {
 	RBrack,
 	LCurly,
 	RCurly,
-	Colon,
+	Dot,
+	Bang,
+	Cash,
+	CashCash,
 	EqualSign,
-	Comma,
 	PlusSign,
 	MinusSign,
 	MulSign,
 	DivSign,
 	PowSign,
-	Dot,
+	Comma,
+	Colon,
 	Arrow,
 	Ellipse,
 }
@@ -35,17 +39,20 @@ static TOKEN_STRINGS: &[StrTokPair] = &[
 	("]", Token::RBrack),
 	("{", Token::LCurly),
 	("}", Token::RCurly),
-	(":", Token::Colon),
+	(".", Token::Dot),
+	("!", Token::Bang),
+	("$", Token::Cash),
+	("$$", Token::CashCash),
 	("=", Token::EqualSign),
-	(",", Token::Comma),
 	("+", Token::PlusSign),
 	("-", Token::MinusSign),
 	("*", Token::MulSign),
 	("/", Token::DivSign),
 	("^", Token::PowSign),
-	(".", Token::Dot),
+	(",", Token::Comma),
+	(":", Token::Colon),
 	("->", Token::Arrow),
-	("``", Token::Ellipse),
+	("...", Token::Ellipse),
 ];
 
 /// An iterator adaptor on an Iterator<Item = char> that tokenizes the items
@@ -106,49 +113,55 @@ impl<I: Iterator<Item = char>> Iterator for Tokens<I> {
 	type Item = Token;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		let peek_char = self.source.peek(0)?;
+		// underscores are not part of the tokenization
+		while self.source.next_if(|c| *c == '_').is_some() {}
 
-		if peek_char.is_whitespace() {
+		// check the token type by peeking the next character
+		let peek_char = self.source.peek(0)?;
+		if peek_char.is_ascii_whitespace() {
 			self.get_longest_valid_string(char::is_ascii_whitespace);
 			Some(Token::Whitespace)
-		} else if peek_char.is_ascii_alphabetic() || *peek_char == '_' {
+		} else if peek_char.is_ascii_alphabetic() {
 			let mut is_first_char = true;
 			Some(Token::Identifier(self.get_longest_valid_string(|c| {
 				if is_first_char {
 					is_first_char = false;
 					return true; // already checked that the first character is valid
 				}
-				c.is_ascii_lowercase() || *c == '-'
+				c.is_ascii_lowercase()
 			})))
 		} else if *peek_char == '\'' {
 			self.source.next(); // discard the apostrophe
-			let mut is_first_char = true;
 			Some(Token::Identifier(self.get_longest_valid_string(|c| {
-				if is_first_char {
-					is_first_char = false;
-					return c.is_ascii_alphabetic() || *c == '_';
-				}
-				c.is_ascii_alphabetic() || c.is_ascii_digit() || *c == '_' || *c == '-'
+				c.is_ascii_alphabetic() || c.is_ascii_digit()
 			})))
+		} else if *peek_char == '\"' {
+			self.source.next(); // discard the opening quotation
+			let string = self.get_longest_valid_string(|c| *c != '\"');
+			self.source.next(); // discard the closing quotation
+			Some(Token::StringLiteral(string))
 		} else if peek_char.is_ascii_digit() {
-			Some(Token::Integer(
-				self.get_longest_valid_string(char::is_ascii_digit)
-					.parse()
-					.expect("Should've been a parseable digits-only String"),
-			))
-		} else if *peek_char == '#' {
-			self.source.next(); // discard hashtag character
 			let mut seen_decimal = false;
-			Some(Token::Real(self.get_longest_valid_string(|c| {
+			let mut seen_exp = false;
+			let number_string = self.get_longest_valid_string(|c| {
 				if c.is_ascii_digit() {
-					return true;
-				}
-				if !seen_decimal && *c == '.' {
+					true
+				} else if !seen_decimal && *c == '.' {
 					seen_decimal = true;
-					return true;
+					true
+				} else if seen_decimal && !seen_exp && *c == 'e' {
+					seen_exp = true;
+					true
+				} else {
+					false
 				}
-				false
-			})))
+			});
+
+			if seen_decimal {
+				Some(Token::Real(number_string))
+			} else {
+				Some(Token::Integer(number_string))
+			}
 		} else {
 			match self.get_longest_simple_token() {
 				None => Some(Token::Unknown(
@@ -184,10 +197,15 @@ mod tests {
 
 	#[test]
 	fn tokenizes_properly() {
-		let input = "'regular_1dEnti-fier*=-->(< caLiFor_ni-aGurls1234 .5678.4#1.234.a ? ";
+		let input = "'notregu1ar_idEnt1-fier*=-->(< ....caLiFor_ni-aGur!$$$123 .56.4e2 1.234.a ? ";
 		let tokens_are: Vec<Token> = input.chars().into_token_iter().collect();
 		let tokens_should_be = vec![
-			Identifier("regular_1dEnti-fier".to_string()),
+			Identifier("notregu1ar".to_string()),
+			Identifier("id".to_string()),
+			Identifier("Ent".to_string()),
+			Integer("1".to_string()),
+			MinusSign,
+			Identifier("fier".to_string()),
 			MulSign,
 			EqualSign,
 			MinusSign,
@@ -195,17 +213,23 @@ mod tests {
 			LParen,
 			Unknown("<".to_string()),
 			Whitespace,
+			Ellipse,
+			Dot,
 			Identifier("ca".to_string()),
 			Identifier("Li".to_string()),
 			Identifier("For".to_string()),
-			Identifier("_ni-a".to_string()),
-			Identifier("Gurls".to_string()),
-			Integer(1234),
+			Identifier("ni".to_string()),
+			MinusSign,
+			Identifier("a".to_string()),
+			Identifier("Gur".to_string()),
+			Bang,
+			CashCash,
+			Cash,
+			Integer("123".to_string()),
 			Whitespace,
 			Dot,
-			Integer(5678),
-			Dot,
-			Integer(4),
+			Real("56.4e2".to_string()),
+			Whitespace,
 			Real("1.234".to_string()),
 			Dot,
 			Identifier("a".to_string()),
