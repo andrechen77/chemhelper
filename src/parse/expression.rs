@@ -1,11 +1,13 @@
 use std::fmt::Debug;
 
 use crate::chem_data::dictionary::{Dictionary, Value};
-use crate::chem_data::{
-	formulas::MolecularFormula,
-};
+use crate::chem_data::formulas::MolecularFormula;
 
-pub mod parser;
+mod parser;
+
+pub use parser::parse_str;
+pub use parser::parse_tokens;
+pub use parser::ParseError;
 
 pub trait Expression {
 	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError>;
@@ -31,7 +33,9 @@ pub struct Identifier {
 
 impl Expression for Identifier {
 	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
-		dict.get_value(&self.name).cloned().ok_or(EvaluationError::UndefinedIdentifier(self.name))
+		dict.get_value(&self.name)
+			.cloned()
+			.ok_or(EvaluationError::UndefinedIdentifier(self.name))
 	}
 
 	fn forehead(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

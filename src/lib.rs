@@ -1,7 +1,7 @@
 use crate::{
 	// chem_data::{dictionary::Dictionary, elements::PeriodicTable},
 	cmd_interface::UserInputIter,
-	parse::{expression::parser, tokens::IntoTokenIter},
+	parse::{expression::parse_str, tokens::IntoTokenIter},
 };
 
 pub mod chem_data;
@@ -19,17 +19,19 @@ pub fn do_something() {
 	let file_contents = std::fs::read_to_string("input.txt").unwrap();
 	let _file_lines = file_contents.lines();
 
-	let _user_lines = UserInputIter::new("Enter formula");
+	let _user_lines = UserInputIter::new("\nEnter formula");
 
-	for line in _user_lines {
-		println!("You entered {}", line);
-		println!("Tokenized as:");
+	for line in _file_lines {
+		println!("You entered: {}", line);
+		println!("\nTokenized as: =============================");
 		for token in line.chars().into_token_iter() {
-			println!("{:?}", token);
+			print!("{:?}, ", token);
 		}
-		match parser::parse_tokens(line.chars().into_token_iter()) {
+		println!("");
+		match parse_str(&line) {
 			Ok(expr) => {
-				println!("Parsed as {:#?}", expr);
+				println!("\nParsed as =============================");
+				println!("{:?}", expr);
 			},
 			Err(error) => {
 				println!("Encountered error: {:?}", error);

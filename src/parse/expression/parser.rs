@@ -1,11 +1,13 @@
-use crate::parse::tokens::{Token, Tokens, IntoTokenIter};
 use super::*;
+use crate::parse::tokens::{IntoTokenIter, Token, Tokens};
 
 pub fn parse_str(string: &str) -> Result<Box<dyn Expression>, ParseError> {
 	parse_tokens(string.chars().into_token_iter())
 }
 
-pub fn parse_tokens<I: Iterator<Item = char>>(token_iter: Tokens<I>) -> Result<Box<dyn Expression>, ParseError> {
+pub fn parse_tokens<I: Iterator<Item = char>>(
+	token_iter: Tokens<I>,
+) -> Result<Box<dyn Expression>, ParseError> {
 	let mut result = Box::new(WrapperExprBuilder::new());
 	for token in token_iter {
 		match result.add_token(token)? {
@@ -28,7 +30,11 @@ fn create_new_expression(first_token: Token) -> Result<Box<dyn ExpressionBuilder
 	match first_token {
 		Token::Identifier(name) => Ok(Box::new(IdentifierExprBuilder::new(name))),
 		Token::StringLiteral(content) => Ok(Box::new(StringLiteralExprBuilder::new(content))),
-		Token::Integer(value) => Ok(Box::new(IntegerLiteralExprBuilder::new(value.parse().expect("Should've been a parseable digits-only string")))),
+		Token::Integer(value) => Ok(Box::new(IntegerLiteralExprBuilder::new(
+			value
+				.parse()
+				.expect("Should've been a parseable digits-only string"),
+		))),
 		Token::Real(value) => Ok(Box::new(RealLiteralExprBuilder::new(value))),
 		Token::LParen => Ok(Box::new(TupleExprBuilder::new())),
 		Token::Cash => Ok(Box::new(MolecularFormulaExprBuilder::new())),
@@ -71,26 +77,38 @@ struct WrapperExprBuilder {
 
 impl WrapperExprBuilder {
 	fn new() -> Self {
-		Self { maybe_inner_expr: None }
+		Self {
+			maybe_inner_expr: None,
+		}
 	}
 }
 
 impl ExpressionBuilder for WrapperExprBuilder {
 	fn add_token(&mut self, token: Token) -> Result<Option<Token>, ParseError> {
 		match &mut self.maybe_inner_expr {
-			None => self.maybe_inner_expr = Some(create_new_expression(token)?),
+			None => {
+				if !matches!(token, Token::Whitespace) {
+					self.maybe_inner_expr = Some(create_new_expression(token)?);
+				}
+			},
 			Some(expr) => match expr.add_token(token)? {
 				None => (),
+				Some(Token::Whitespace) => (),
 				Some(rejected) => {
-					let (expr, maybe_rejected) = wrap_in_infix(self.maybe_inner_expr.take().expect("There should've been an inner expr"), rejected);
+					let (expr, maybe_rejected) = wrap_in_infix(
+						self.maybe_inner_expr
+							.take()
+							.expect("There should've been an inner expr"),
+						rejected,
+					);
 					self.maybe_inner_expr = Some(expr);
 					if let Some(bad_token) = maybe_rejected {
 						// WrapperExprBuilder is in a valid state if its inner_expr is
 						// valid. Therefore, reject the token and close.
 						return Ok(Some(bad_token));
 					}
-				}
-			}
+				},
+			},
 		}
 		Ok(None)
 	}
@@ -119,7 +137,9 @@ impl ExpressionBuilder for IdentifierExprBuilder {
 	}
 
 	fn finish(self: Box<Self>) -> Result<Box<dyn Expression>, ParseError> {
-		Ok(Box::new(Identifier { name: self.identifier }))
+		Ok(Box::new(Identifier {
+			name: self.identifier,
+		}))
 	}
 
 	fn parsing_time_identifier(&self) -> Result<&str, ParseError> {
@@ -146,7 +166,9 @@ impl ExpressionBuilder for StringLiteralExprBuilder {
 	}
 
 	fn finish(self: Box<Self>) -> Result<Box<dyn Expression>, ParseError> {
-		Ok(Box::new(StringLiteral { content: self.content }))
+		Ok(Box::new(StringLiteral {
+			content: self.content,
+		}))
 	}
 }
 
@@ -210,7 +232,11 @@ struct TupleExprBuilder {
 
 impl TupleExprBuilder {
 	fn new() -> Self {
-		Self { values: Vec::new(), has_active_expr: false, closed: false }
+		Self {
+			values: Vec::new(),
+			has_active_expr: false,
+			closed: false,
+		}
 	}
 
 	/// Attempts to add the token to the current active expression, or if none exists, to use the
@@ -221,11 +247,15 @@ impl TupleExprBuilder {
 		assert!(!self.closed);
 
 		if self.has_active_expr {
-			self.values.last_mut().expect("There should've been an active expression")
+			self.values
+				.last_mut()
+				.expect("There should've been an active expression")
 				.add_token(token)
 		} else {
-			self.values.push(create_new_expression(token)?);
-			self.has_active_expr = true;
+			if !matches!(token, Token::Whitespace) {
+				self.values.push(create_new_expression(token)?);
+				self.has_active_expr = true;
+			}
 			Ok(None)
 		}
 	}
@@ -239,12 +269,15 @@ impl ExpressionBuilder for TupleExprBuilder {
 
 		match self.add_to_active_expr(token)? {
 			None => (),
+			Some(Token::Whitespace) => (),
 			Some(Token::RParen) => self.closed = true,
 			Some(Token::Comma) => self.has_active_expr = false,
 			Some(rejected) => {
 				// attempt to create an infix expression with the rejected token
 				let (expr, maybe_rejected) = wrap_in_infix(
-					self.values.pop().expect("There should've been an active subexpression"),
+					self.values
+						.pop()
+						.expect("There should've been an active subexpression"),
 					rejected,
 				);
 				self.values.push(expr);
@@ -277,7 +310,10 @@ struct SpecialSyntaxExprBuilder {
 
 impl SpecialSyntaxExprBuilder {
 	fn new(syntax_name: &str) -> Self {
-		Self { seen_curlies: (false, false), inner_expr: lookup_special_syntax_builder(syntax_name) }
+		Self {
+			seen_curlies: (false, false),
+			inner_expr: lookup_special_syntax_builder(syntax_name),
+		}
 	}
 }
 
@@ -293,17 +329,19 @@ impl ExpressionBuilder for SpecialSyntaxExprBuilder {
 					self.seen_curlies.0 = true;
 					return Ok(None);
 				},
+				Token::Whitespace => return Ok(None),
 				_ => return Err(ParseError::UnexpectedToken(token)),
 			}
 		}
 
 		match self.inner_expr.add_token(token)? {
 			None => (),
+			Some(Token::Whitespace) => (),
 			Some(Token::RCurly) => self.seen_curlies.1 = true,
 			Some(rejected) => {
 				// don't attempt to create an infix expression
 				return Err(ParseError::UnexpectedToken(rejected));
-			}
+			},
 		}
 		Ok(None)
 	}
@@ -327,7 +365,10 @@ struct InfixOperationsExprBuilder {
 
 impl InfixOperationsExprBuilder {
 	fn new(first_operand: Box<dyn ExpressionBuilder>, first_operator: InfixOperator) -> Self {
-		Self {operands: vec![first_operand], operators: vec![first_operator]}
+		Self {
+			operands: vec![first_operand],
+			operators: vec![first_operator],
+		}
 	}
 
 	/// Attempts to add the token to the current active expression, or if none exists, to use the
@@ -337,11 +378,16 @@ impl InfixOperationsExprBuilder {
 	fn add_to_current_active_expr(&mut self, token: Token) -> Result<Option<Token>, ParseError> {
 		if self.operands.len() == self.operators.len() {
 			// the last item added was an operator
-			self.operands.push(create_new_expression(token)?);
+			if !matches!(token, Token::Whitespace) {
+				self.operands.push(create_new_expression(token)?);
+			}
 			Ok(None)
 		} else if self.operands.len() == self.operators.len() + 1 {
 			// there is still an active operand
-			self.operands.last_mut().expect("There should've been an active operand").add_token(token)
+			self.operands
+				.last_mut()
+				.expect("There should've been an active operand")
+				.add_token(token)
 		} else {
 			unreachable!()
 		}
@@ -352,6 +398,7 @@ impl ExpressionBuilder for InfixOperationsExprBuilder {
 	fn add_token(&mut self, token: Token) -> Result<Option<Token>, ParseError> {
 		match self.add_to_current_active_expr(token)? {
 			None => (),
+			Some(Token::Whitespace) => (),
 			Some(rejected) => match InfixOperator::try_from(rejected) {
 				Ok(operator) => self.operators.push(operator),
 				Err(bad_token) => {
@@ -360,7 +407,7 @@ impl ExpressionBuilder for InfixOperationsExprBuilder {
 					assert_eq!(self.operands.len() - self.operators.len(), 1);
 					return Ok(Some(bad_token));
 				},
-			}
+			},
 		}
 		Ok(None)
 	}
@@ -374,17 +421,31 @@ impl ExpressionBuilder for InfixOperationsExprBuilder {
 		for expr_builder in self.operands {
 			operands.push(expr_builder.finish()?);
 		}
-		Ok(Box::new(InfixOperationsExpr { operands, operators: self.operators }))
+		Ok(Box::new(InfixOperationsExpr {
+			operands,
+			operators: self.operators,
+		}))
 	}
 }
 
-fn wrap_in_infix(expr: Box<dyn ExpressionBuilder>, maybe_operator: Token) -> (Box<dyn ExpressionBuilder>, Option<Token>) {
+fn wrap_in_infix(
+	expr: Box<dyn ExpressionBuilder>,
+	maybe_operator: Token,
+) -> (Box<dyn ExpressionBuilder>, Option<Token>) {
 	match InfixOperator::try_from(maybe_operator) {
-		Ok(operator) => (Box::new(InfixOperationsExprBuilder::new(expr, operator)), None),
-		Err(bang @ Token::Bang) => (Box::new(SpecialSyntaxExprBuilder::new(match expr.parsing_time_identifier() {
-			Ok(syntax_name) => syntax_name,
-			Err(_) => return (expr, Some(bang)),
-		})), None),
+		Ok(operator) => (
+			Box::new(InfixOperationsExprBuilder::new(expr, operator)),
+			None,
+		),
+		Err(bang @ Token::Bang) => (
+			Box::new(SpecialSyntaxExprBuilder::new(
+				match expr.parsing_time_identifier() {
+					Ok(syntax_name) => syntax_name,
+					Err(_) => return (expr, Some(bang)),
+				},
+			)),
+			None,
+		),
 		Err(rejected) => (expr, Some(rejected)),
 	}
 }
@@ -412,11 +473,16 @@ struct MolecularFormulaExprBuilder {
 	charge: Option<(bool, Option<Box<dyn ExpressionBuilder>>)>,
 	// true is positive, false is negative; None value means that part of the syntax hasn't been
 	// encountered yet
+	is_closed: bool,
 }
 
 impl MolecularFormulaExprBuilder {
 	fn new() -> Self {
-		Self { symbols_and_subscripts: Vec::new(), charge: None}
+		Self {
+			symbols_and_subscripts: Vec::new(),
+			charge: None,
+			is_closed: false,
+		}
 	}
 
 	/// Attempts to add the specified token to the last symbol or subscript expression; if this
@@ -435,13 +501,15 @@ impl MolecularFormulaExprBuilder {
 
 		// Either there were no subexpressions or the last subexpression rejected
 		// So try to create another expression using the token
-		match create_new_expression(token) {
-			Ok(expr) => {
-				self.symbols_and_subscripts.push(expr);
-				return Ok(None);
-			},
-			Err(ParseError::UnexpectedToken(rejected)) => token = rejected,
-			_ => unreachable!("create_new_expression should never return anything else")
+		if !matches!(token, Token::Whitespace) {
+			match create_new_expression(token) {
+				Ok(expr) => {
+					self.symbols_and_subscripts.push(expr);
+					return Ok(None);
+				},
+				Err(ParseError::UnexpectedToken(rejected)) => token = rejected,
+				_ => unreachable!("create_new_expression should never return anything else"),
+			}
 		}
 
 		// Return the token
@@ -451,6 +519,10 @@ impl MolecularFormulaExprBuilder {
 
 impl ExpressionBuilder for MolecularFormulaExprBuilder {
 	fn add_token(&mut self, token: Token) -> Result<Option<Token>, ParseError> {
+		if self.is_closed {
+			return Ok(Some(token));
+		}
+
 		match &mut self.charge {
 			None => {
 				// no sign encountered yet
@@ -461,8 +533,9 @@ impl ExpressionBuilder for MolecularFormulaExprBuilder {
 						_ => {
 							// all the subexpressions are valid so the formula must be valid too;
 							// therefore reject and close
+							self.is_closed = true;
 							return Ok(Some(rejected));
-						}
+						},
 					}
 				}
 				Ok(None)
@@ -470,13 +543,21 @@ impl ExpressionBuilder for MolecularFormulaExprBuilder {
 			Some((_, magn_option @ None)) => {
 				// a sign has been encountered but no magnitude expression
 				*magn_option = Some(create_new_expression(token)?);
+				// cannot be whitespace; once a sign is encountered, a magnitude expression is
+				// immediately expected
 				Ok(None)
 			},
 			Some((_, Some(magn))) => {
 				// a magnitude expression exists
 				// if the magntiude expression accepts, the token, so does the whole formula; if the
 				// magnitude expression rejects, so does the whole formula
-				magn.add_token(token)
+				match magn.add_token(token)? {
+					Some(rejected) => {
+						self.is_closed = true;
+						Ok(Some(rejected))
+					},
+					None => Ok(None),
+				}
 			},
 		}
 	}
@@ -488,11 +569,14 @@ impl ExpressionBuilder for MolecularFormulaExprBuilder {
 			symbols_and_subscripts.push(symbol_or_subscr.finish()?)
 		}
 		Ok(Box::new(MolecularFormulaExpr {
-			symbols_and_subscripts: symbols_and_subscripts,
+			symbols_and_subscripts,
 			_charge: match self.charge {
 				None => None,
-				Some((sign, maybe_magn)) => Some((sign, maybe_magn.ok_or(ParseError::ExpectedTokens)?.finish()?))
-			}
+				Some((sign, maybe_magn)) => Some((
+					sign,
+					maybe_magn.ok_or(ParseError::ExpectedTokens)?.finish()?,
+				)),
+			},
 		}))
 	}
 }
@@ -506,7 +590,10 @@ struct CondensedFormulaExprBuilder {
 
 impl CondensedFormulaExprBuilder {
 	fn new() -> Self {
-		Self {subformulas_and_subscripts: Vec::new(), charge: None}
+		Self {
+			subformulas_and_subscripts: Vec::new(),
+			charge: None,
+		}
 	}
 }
 
@@ -521,6 +608,4 @@ impl ExpressionBuilder for CondensedFormulaExprBuilder {
 }
 
 #[cfg(test)]
-mod tests {
-	
-}
+mod tests {}
