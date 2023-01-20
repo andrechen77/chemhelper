@@ -1,14 +1,16 @@
+use std::fmt::Display;
+
 use super::formulas::MolecularFormula;
 use crate::helper::coeff_vec::CoeffVec;
 pub use crate::helper::coeff_vec::Num;
 
-#[derive(Default)]
-pub struct Equation<'a> {
+#[derive(Default, Debug, PartialEq, Clone)]
+pub struct ChemEqn<'a> {
 	// positive coefficients are products, negative coefficients are reactants
 	specieses: CoeffVec<MolecularFormula<'a>>,
 }
 
-impl<'a> Equation<'a> {
+impl<'a> ChemEqn<'a> {
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -22,4 +24,10 @@ impl<'a> Equation<'a> {
 	}
 
 	// TODO add solve(self) -> Self
+}
+
+impl Display for ChemEqn<'_> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		todo!();
+	}
 }

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
-use crate::chem_data::dictionary::{Dictionary, Value};
+use crate::chem_data::dictionary::{Dictionary, Value, DictAccessError, UndefinedIdentifierError, BadTypeError};
+use crate::chem_data::elements::Element;
 use crate::chem_data::formulas::MolecularFormula;
 
 mod parser;
@@ -10,20 +11,29 @@ pub use parser::parse_tokens;
 pub use parser::ParseError;
 
 pub trait Expression {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError>;
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>>;
 
 	fn forehead(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
 }
-
 impl Debug for dyn Expression {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		self.forehead(f)
 	}
 }
 
-pub enum EvaluationError {
-	UndefinedIdentifier(String),
-	BadType,
+pub enum EvaluationError<'a> {
+	UndefinedIdentifier(UndefinedIdentifierError<'a>),
+	BadType(BadTypeError<'a>),
+}
+impl<'a> From<UndefinedIdentifierError<'a>> for EvaluationError<'a> {
+	fn from(value: UndefinedIdentifierError<'a>) -> Self {
+		EvaluationError::UndefinedIdentifier(value)
+	}
+}
+impl<'a> From<BadTypeError<'a>> for EvaluationError<'a> {
+	fn from(value: BadTypeError<'a>) -> Self {
+		EvaluationError::BadType(value)
+	}
 }
 
 #[derive(Debug)]
@@ -32,10 +42,8 @@ pub struct Identifier {
 }
 
 impl Expression for Identifier {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
-		dict.get_value(&self.name)
-			.cloned()
-			.ok_or(EvaluationError::UndefinedIdentifier(self.name))
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
+		Ok(dict.get_value(&self.name).cloned()?)
 	}
 
 	fn forehead(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -49,7 +57,7 @@ struct StringLiteral {
 }
 
 impl Expression for StringLiteral {
-	fn evaluate<'a>(self: Box<Self>, _dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, _dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		Ok(Value::String(self.content))
 	}
 
@@ -64,7 +72,7 @@ struct IntegerLiteral {
 }
 
 impl Expression for IntegerLiteral {
-	fn evaluate<'a>(self: Box<Self>, _dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, _dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		Ok(Value::Integer(self.value))
 	}
 
@@ -79,7 +87,7 @@ struct RealLiteral {
 }
 
 impl Expression for RealLiteral {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		todo!();
 	}
 
@@ -94,7 +102,7 @@ struct TupleExpr {
 }
 
 impl Expression for TupleExpr {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		todo!();
 	}
 
@@ -110,7 +118,7 @@ struct SpecialSyntaxExpr {
 }
 
 impl Expression for SpecialSyntaxExpr {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		todo!();
 	}
 
@@ -136,7 +144,7 @@ enum InfixOperator {
 }
 
 impl Expression for InfixOperationsExpr {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		todo!();
 	}
 
@@ -153,7 +161,7 @@ struct MolecularFormulaExpr {
 }
 
 impl Expression for MolecularFormulaExpr {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		let mut result = MolecularFormula::new();
 
 		let mut values = Vec::new();
@@ -162,10 +170,10 @@ impl Expression for MolecularFormulaExpr {
 		}
 		let mut values = values.into_iter().peekable();
 		while let Some(value) = values.next() {
-			let element = value.element().ok_or(EvaluationError::BadType)?;
+			let element: &Element = value.as_type::<&Element>()?;
 			let subscript = match values.next_if(|val| matches!(val, Value::Integer(_))) {
 				None => 1,
-				Some(value) => value.integer().expect("Should've checked int type"),
+				Some(value) => value.as_type::<u32>().expect("Should've checked int type"),
 			};
 			result.set_subscr(element, result.get_subscr(element) + subscript);
 		}
@@ -186,7 +194,7 @@ struct CondensedFormulaExpr {
 }
 
 impl Expression for CondensedFormulaExpr {
-	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError> {
+	fn evaluate<'a>(self: Box<Self>, dict: &'a Dictionary) -> Result<Value<'a>, EvaluationError<'a>> {
 		todo!();
 	}
 
